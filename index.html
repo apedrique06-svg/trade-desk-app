@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https://pub-b96c46cfcd0c4e3d9159d3bfbdadbd84.r2.dev; img-src 'self' data:; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="robots" content="noindex,nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Desk">
+<meta name="theme-color" content="#000000">
+<title>Desk</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header id="top">
+  <div class="row"><span id="mode" class="badge">—</span><span id="fresh" class="fresh">sin datos</span></div>
+  <div class="eq"><span id="equity">—</span><span id="eqpct" class="muted"></span></div>
+  <div class="muted small" id="cash"></div>
+</header>
+<main id="view"></main>
+<section id="setup" hidden>
+  <h2>Abrir el desk</h2>
+  <p class="muted">Pega aquí el enlace privado que te mandó el bot de Telegram (empieza por https://apedrique06-svg.github.io/… y lleva <code>#t=</code>).</p>
+  <textarea id="paste" rows="4" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+  <button id="save">Guardar</button>
+  <p class="muted small" id="setupmsg"></p>
+</section>
+<nav id="tabs">
+  <button data-tab="pos" class="on">Posiciones</button>
+  <button data-tab="night">Noche</button>
+  <button data-tab="coins">Coins</button>
+  <button data-tab="act">Actividad</button>
+  <button data-tab="health">Salud</button>
+</nav>
+<script src="chart.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
