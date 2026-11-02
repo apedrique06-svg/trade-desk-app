@@ -1,6 +1,6 @@
 /* App-shell cache only. Never caches the data JSON (R2) and never sees the fragment (fragments are not sent). */
-const C = "desk-shell-v2";
-const SHELL = ["./", "index.html", "app.css", "app.js", "chart.js", "office.js", "manifest.json", "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png"];
+const C = "desk-shell-v3";
+const SHELL = ["./", "index.html", "app.css", "app.js", "chart.js", "office.js", "fonts/VT323-Regular.ttf", "manifest.json", "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(C).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== C).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener("fetch", e => {

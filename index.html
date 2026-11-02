@@ -4,42 +4,49 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="referrer" content="no-referrer">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https://pub-b96c46cfcd0c4e3d9159d3bfbdadbd84.r2.dev; img-src 'self' data:; style-src 'self'; script-src 'self'; base-uri 'none'; form-action 'none'">
-<meta name="desk-version" content="2">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https://pub-b96c46cfcd0c4e3d9159d3bfbdadbd84.r2.dev; img-src 'self' data:; style-src 'self'; script-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="desk-version" content="3">
 <meta name="robots" content="noindex,nofollow">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Desk">
-<meta name="theme-color" content="#05060f">
+<meta name="theme-color" content="#030308">
 <title>Trade Desk + Jev</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="preload" href="fonts/VT323-Regular.ttf" as="font" type="font/ttf" crossorigin>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
 <div class="frame" id="app">
   <header id="top" class="bar">
-    <div class="brand"><span class="logo" id="logo"></span><b>TRADE DESK + JEV</b><span class="tag">AGENTES CAZAN · TÚ DECIDES</span></div>
-    <div class="meta"><span id="mode" class="badge">—</span><span id="fresh" class="fresh">sin datos</span><span class="clock" id="clock">--:--:--</span></div>
+    <div class="brand"><span class="logo" id="logo"></span><b>TRADE DESK + JEV</b><span class="live"><i></i>LIVE</span><span id="mode" class="badge">—</span></div>
+    <div class="meta"><span id="fresh" class="fresh">sin datos</span><span class="clock" id="clock">--:--:--</span></div>
   </header>
 
   <section id="dash">
     <div class="cards" id="cards"></div>
-    <div class="panel office"><div class="ptitle"><span>OFICINA</span><span class="muted" id="officeinfo"></span></div><canvas id="office" width="320" height="180"></canvas></div>
-    <div class="panel balance"><div class="ptitle"><span id="baltitle">BALANCE</span><span id="balpct"></span></div>
-      <div class="balrow"><canvas id="balchart"></canvas><div class="bigbal"><span class="muted small">EQUITY</span><span id="equity">—</span><span class="muted small" id="cash"></span></div></div></div>
-    <div class="duo">
-      <div class="panel"><div class="ptitle"><span>JEV · ANÁLISIS</span><span class="muted" id="anakind"></span></div><div id="analysis"></div><canvas id="candles"></canvas></div>
-      <details class="panel" id="thrbox" open><summary class="ptitle"><span>thresholds</span><span class="muted">SOLO LECTURA · VALORES TAL CUAL</span></summary><div id="thresholds" class="thr"></div></details>
+    <div class="stage">
+      <div class="panel bubbles"><div class="ptitle"><span>COINS</span></div><div id="bubbles"></div></div>
+      <div class="panel office"><div class="ptitle"><span>OFICINA · PIPELINE</span><span class="muted" id="officeinfo"></span></div><canvas id="office" width="960" height="540"></canvas></div>
+      <div class="panel big"><div class="ptitle"><span id="bigtitle">JEV · ANÁLISIS</span><span class="muted" id="bigsub"></span></div><canvas id="bigchart"></canvas><div id="analysis"></div></div>
     </div>
-    <div class="panel"><div class="ptitle"><span>DESK</span><span class="muted" id="tabname"></span></div><nav id="tabs">
-  <button data-tab="pos" class="on">Posiciones</button>
-  <button data-tab="night">Noche</button>
-  <button data-tab="coins">Coins</button>
-  <button data-tab="act">Actividad</button>
-  <button data-tab="health">Salud</button>
-</nav><main id="view"></main></div>
+    <div class="panel strip"><div class="ptitle"><span id="baltitle">BALANCE</span><span id="balpct"></span></div>
+      <div class="balrow"><canvas id="balchart"></canvas><div class="bigbal"><span class="muted">EQUITY</span><span id="equity">—</span><span class="muted" id="cash"></span></div></div></div>
+    <div class="duo">
+      <div class="panel"><div class="ptitle"><span id="candletitle">VELAS</span><span class="muted" id="candlesub"></span></div><canvas id="candles"></canvas></div>
+      <div class="panel"><div class="ptitle"><span>TERMINAL · ACTIVIDAD</span><span class="muted" id="logsub"></span></div><div id="term" class="term"></div></div>
+    </div>
+    <details class="panel" id="thrbox" open><summary class="ptitle"><span>THRESHOLDS</span><span class="muted">SOLO LECTURA · VALORES TAL CUAL</span></summary><div id="thresholds" class="thr"></div></details>
+    <div class="panel"><div class="ptitle"><span>DESK</span><span class="muted" id="tabname"></span></div>
+      <nav id="tabs">
+        <button data-tab="pos" class="on">Posiciones</button>
+        <button data-tab="night">Noche</button>
+        <button data-tab="coins">Coins</button>
+        <button data-tab="act">Actividad</button>
+        <button data-tab="health">Salud</button>
+      </nav><main id="view"></main></div>
   </section>
 
   <section id="setup" hidden>
@@ -49,6 +56,7 @@
     <button id="save">Guardar</button>
     <p class="muted small" id="setupmsg"></p>
   </section>
+  <footer class="muted small foot">VT323 · SIL Open Font License · arte pixel original</footer>
 </div>
 <script src="chart.js"></script>
 <script src="office.js"></script>
