@@ -1,4 +1,4 @@
-/* Desk web app (Paso 8, v3: neon pixel dashboard + live network). Read-only, PAPER/LIVE agnostic. No secrets in this file:
+/* Desk web app (Paso 8, v4 panels; v3: neon pixel dashboard + live network). Read-only, PAPER/LIVE agnostic. No secrets in this file:
    the app token (t) and the data path (d) arrive only in the URL fragment #t=…&d=… (never sent to any server),
    are kept in localStorage on this device, and the fragment is wiped from the address bar.
    Data: R2 public object d/{d}/desk.json, AES-256-GCM, key = SHA-256("trade-desk-app/v1:" + t).
@@ -173,8 +173,7 @@ function bubbles() {
     const isNew = seenBubbles.size && !seenBubbles.has(c.mint) ? " new" : "";
     const inner = `${identicon(c.mint)}<b>${esc(initials(c.name))}</b>`;
     const title = esc(`${c.name || ""} · ${c.status || ""}`);
-    return fomo(c.link) ? `<a class="bub ${st}${isNew}" href="${esc(fomo(c.link))}" target="_blank" rel="noopener noreferrer" title="${title}">${inner}</a>`
-                        : `<span class="bub ${st}${isNew}" title="${title}">${inner}</span>`;
+    return `<button type="button" class="bub ${st}${isNew}" data-mint="${esc(c.mint)}" title="${title}">${inner}</button>`;
   }).join("") || `<span class="muted small">—</span>`;
   seenBubbles = new Set(cs.map(c => c.mint));
 }
@@ -245,6 +244,85 @@ function terminal() {
   $("#logsub").textContent = `${acts.length} eventos · hora Madrid`;
 }
 
+
+/* ---- v4 read-only panels (2026-11-03): funnel, Auditor queue, near misses, rejected-then-pumped, heatmap, coin card ---- */
+const P = () => (data && data.panels) || {};
+const kusd = x => x == null ? "—" : "$" + (Math.abs(x) >= 1e6 ? (x / 1e6).toFixed(2) + "M" : Math.abs(x) >= 1e3 ? (x / 1e3).toFixed(1) + "K" : Number(x).toFixed(0));
+function widths(root) { root.querySelectorAll("[data-w]").forEach(el => { el.style.width = Math.max(0, Math.min(100, Number(el.dataset.w) * 100)) + "%"; }); }
+const coinBtn = (m, n) => `<button type="button" class="lnk" data-mint="${esc(m)}">${esc(n || String(m).slice(0, 6))}</button>`;
+
+function funnelP() {
+  const f = P().funnel, box = $("#funnel");
+  if (!f) { box.innerHTML = `<div class="empty">Sin datos del embudo.</div>`; $("#fchips").innerHTML = ""; return; }
+  const fl = f.filters || {};
+  const chips = [["Liq min", kusd(fl.minLiquidityUsd)], ["1h tope", `+${fl.h1CapPct}%`],
+    ["1h fuerte", `+${fl.h1StrongCapPct}% si vol ≥${fl.strongVolLiq}× liq y liq ≥${kusd(fl.strongMinLiqUsd)}`],
+    ["Edad min", `${fl.minAgeMin} min`], ["LP bloq.", `≥${fl.minLpLockedPct}%`], ["Analyst min", fl.minScore]];
+  $("#fchips").innerHTML = chips.map(([k, v]) => `<span class="chip"><i>${esc(k)}</i> ${esc(v)}</span>`).join("");
+  const st = f.stages || [], top = Math.max(1, ...st.map(x => x.n || 0));
+  box.innerHTML = st.map(x => `<div class="frow"><span class="fl">${esc(x.label.toUpperCase())}</span>
+    <span class="fbar"><i data-w="${(x.n || 0) / top}"></i></span><b>${num(x.n)}${x.in != null ? `<span class="muted">/${num(x.in)}</span>` : ""}</b>
+    <span class="fr">${x.top ? `✕ ${esc(x.top.reason)} <span class="muted">× ${x.top.n}</span>` : `<span class="muted">sin rechazos</span>`}</span></div>`).join("");
+  widths(box);
+  $("#funsub").textContent = `NOCHE DESDE ${hhmm(new Date(f.since * 1000).toISOString())} · EN VIVO`;
+}
+
+function auditP() {
+  const q = P().auditorQueue || [], box = $("#auditq");
+  if (!q.length) { box.innerHTML = `<div class="empty">Ningún coin ha llegado al Auditor todavía.</div>`; return; }
+  box.innerHTML = `<ul class="list">${q.map(a => `<li><div class="aqrow">${coinBtn(a.mint, a.name)}
+    <span class="layers">${a.layers.map(L => `<i class="${L.pass === true ? "ok" : L.pass === false ? "bad" : ""}" title="L${L.n} ${esc(L.value || "sin comprobar")}">${L.n}</i>`).join("")}</span>
+    <b class="${a.passed ? "pos" : "neg"}">${a.score == null ? "—" : a.score}<span class="muted">/100</span></b></div>
+    <div class="sub">${hhmm(new Date(a.ts * 1000).toISOString())} · ${a.layersPassed}/8 · ${a.passed ? "pasa" : esc(a.reason || "")}</div></li>`).join("")}</ul>`;
+}
+
+function nearP() {
+  const n = P().nearMisses || [], box = $("#near"), ms = ((data.settings || {}).analyst || {}).min_score;
+  $("#nearsub").textContent = ms == null ? "" : `SCORE ${ms - 10}–${ms - 1} · MIN ${ms}`;
+  if (!n.length) { box.innerHTML = `<div class="empty">Ningún coin a menos de 10 puntos del mínimo (todavía sin veredictos del Analyst).</div>`; return; }
+  box.innerHTML = `<ul class="list">${n.map(x => `<li><div class="aqrow">${coinBtn(x.mint, x.name)}<span class="fbar"><i data-w="${x.score / 100}"></i></span><b>${x.score}<span class="muted">/${x.minScore}</span></b></div>
+    <div class="sub">hundido por: ${esc(x.sunkBy)}${x.reason ? " · " + esc(x.reason) : ""}</div></li>`).join("")}</ul>`;
+  widths(box);
+}
+
+function pumpedP() {
+  const p = P().pumped || {}, g = p.groups || [], box = $("#pumped");
+  $("#pumpsub").textContent = `${num(p.measured)} MEDIDOS · ${num(p.pending)} ESPERANDO 1 H`;
+  if (!g.length) { box.innerHTML = `<div class="empty">Aún sin medidas: el desk anota el precio ~1 h después de cada rechazo.${p.pending ? `<br><span class="small">${p.pending} rechazos esperando su hora.</span>` : ""}</div>`; return; }
+  box.innerHTML = `<ul class="list">${g.map(x => `<li><div class="aqrow"><span>${esc(x.filter)}</span><b class="${cls(x.avgPct)}">${pct(x.avgPct)}</b></div>
+    <div class="sub">${x.n} medidos · ${x.pumped} subieron ≥ +50%${x.best ? ` · mejor ${coinBtn(x.best.mint, x.best.name)} ${pct(x.best.pct)}` : ""}</div></li>`).join("")}</ul>`;
+}
+
+function heatP() {
+  const h = P().heatmap || {}, cells = h.cells || [], box = $("#heat");
+  if (!cells.length) { box.innerHTML = `<div class="empty">Sin datos.</div>`; return; }
+  const mx = Math.max(1, ...cells.map(c => c.launches));
+  box.innerHTML = cells.map(c => {
+    const lv = c.launches ? Math.min(4, 1 + Math.floor(c.launches / mx * 3.999)) : 0;
+    const st = c.frozenMin >= 5 ? " fz" : c.offlineMin >= 5 ? " off" : "";
+    return `<div class="hc l${lv}${st}" title="${String(c.hour).padStart(2, "0")}:00 · ${c.launches} lanz. · congelado ${c.frozenMin} min · sin latido ${c.offlineMin} min">
+      <b>${c.launches}</b><span>${String(c.hour).padStart(2, "0")}</span>${c.frozenMin || c.offlineMin ? `<em>${c.frozenMin ? "❄" + c.frozenMin : ""}${c.offlineMin ? "⏻" + c.offlineMin : ""}</em>` : ""}</div>`;
+  }).join("");
+}
+
+function openCoin(mint) {
+  const d = (P().details || {})[mint], c = (data.coins || []).find(x => x.mint === mint) || {};
+  const name = (d && d.name) || c.name || String(mint).slice(0, 6);
+  $("#sheettitle").textContent = String(name).toUpperCase();
+  const rows = d ? [["Estado", d.status], ["Liquidez", kusd(d.liquidityUsd)], ["Edad pool", d.ageMin == null ? "—" : d.ageMin + " min"],
+    ["Volumen 1 h", kusd(d.volumeH1)], ["Cambio 1 h", pct(d.h1ChangePct)], ["Top 10", d.top10Pct == null ? "—" : num(d.top10Pct, 1) + "%"],
+    ["Holders", d.holders == null ? "—" : num(d.holders)], ["LP bloqueado", d.lpLocked || "—"]] : [["Estado", c.status], ["Motivo", c.reason]];
+  const dex = d && typeof d.dexscreener === "string" && d.dexscreener.startsWith("https://dexscreener.com/") ? d.dexscreener : null;
+  const fl = fomo((d && d.link) || c.link);
+  $("#sheetbody").innerHTML = `<div class="kv">${rows.map(([k, v]) => `<span>${esc(k)}</span><span>${esc(v == null ? "—" : v)}</span>`).join("")}</div>
+    <div class="links">${dex ? `<a href="${esc(dex)}" target="_blank" rel="noopener noreferrer">DexScreener ↗</a>` : ""}${fl ? `<a href="${esc(fl)}" target="_blank" rel="noopener noreferrer">Abrir en FOMO ↗</a>` : ""}</div>
+    <h4>/why</h4><pre class="why">${esc((d && d.why) || "sin explicación todavía")}</pre><div class="muted small mint">${esc(mint)}</div>`;
+  $("#sheet").hidden = false;
+}
+function closeSheet() { $("#sheet").hidden = true; }
+
+function panelsV4() { funnelP(); auditP(); nearP(); pumpedP(); heatP(); }
+
 let big = null, cand = null;
 function animCharts() {
   if (!data || document.visibilityState !== "visible" || !creds) return;
@@ -254,7 +332,7 @@ function animCharts() {
 }
 
 function dashboard() {
-  cards(); bubbles(); analysis(); thresholds(); terminal();
+  cards(); bubbles(); analysis(); thresholds(); terminal(); panelsV4();
   big = bigSeries(); $("#bigtitle").textContent = big.title; $("#bigsub").textContent = big.sub;
   cand = candleData(); $("#candletitle").textContent = cand.title; $("#candlesub").textContent = cand.sub;
   window.DeskChart.strip($("#balchart"), data.equitySeries || [], ((data.report || {}).totals || {}).stackStart ?? (data.state || {}).stack);
@@ -287,7 +365,7 @@ const V = {
   },
   coins() {
     const cs = data.coins || []; if (!cs.length) return `<div class="empty">Ningún coin esta noche.</div>`;
-    return `<ul class="list">${cs.map(c => `<li>${fomo(c.link) ? `<a href="${esc(fomo(c.link))}" target="_blank" rel="noopener noreferrer">${esc(c.name || c.mint.slice(0, 6))}</a>` : esc(c.name)}
+    return `<ul class="list">${cs.map(c => `<li><button type="button" class="lnk" data-mint="${esc(c.mint)}">${esc(c.name || c.mint.slice(0, 6))}</button>
       <span class="muted small"> · ${esc(c.status || "")}</span><div class="sub">${hhmm(c.seen)} · ${esc(c.reason || "")}</div></li>`).join("")}</ul>`;
   },
   act() {
@@ -338,6 +416,12 @@ $("#save").addEventListener("click", () => {
 });
 window.addEventListener("hashchange", () => { const c = loadCreds(); if (c) { creds = c; key = null; start(); } });
 
+document.addEventListener("click", e => {
+  const b = e.target.closest && e.target.closest("[data-mint]");
+  if (b && data) { e.preventDefault(); openCoin(b.dataset.mint); return; }
+  if (e.target.id === "sheet" || e.target.id === "sheetx") closeSheet();
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeSheet(); });
 if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
 $("#logo").innerHTML = avatar("logo", "#ff2d95");
 window.DeskOffice.mount($("#office"));
