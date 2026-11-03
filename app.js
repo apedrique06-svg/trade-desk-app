@@ -258,6 +258,16 @@ function funnelP() {
   const chips = [["Liq min", kusd(fl.minLiquidityUsd)], ["1h tope", `+${fl.h1CapPct}%`],
     ["1h fuerte", `+${fl.h1StrongCapPct}% si vol ≥${fl.strongVolLiq}× liq y liq ≥${kusd(fl.strongMinLiqUsd)}`],
     ["Edad min", `${fl.minAgeMin} min`], ["LP bloq.", `≥${fl.minLpLockedPct}%`], ["Analyst min", fl.minScore]];
+  const pl = f.plan;
+  if (pl && pl.phase && pl.phase !== "legacy") {
+    const sw = pl.switchAt ? new Date(pl.switchAt) : null;
+    const swt = sw ? sw.toLocaleString("es-ES", {timeZone: "Europe/Madrid", weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"}) : "—";
+    chips.push(["Fase", `${pl.phase} · PAPER`], ["Entrada", `${pl.entryPct}% saldo`], ["Riesgo máx", `${pl.riskCapPct}% saldo/op`],
+      ["Stop", `−${pl.stopPct}%`], ["Objetivo", `+${pl.targetPct}% fijo`], ["R/R", `${pl.rr} (min ${pl.minRr})`],
+      ["Máx abiertas", `${pl.maxOpen} · 1 por coin`], ["Stop diario", `−${pl.dailyStopPct}%${pl.closeAllOnBrake ? " cierra todo" : ""}`],
+      ["Trailing", pl.trailing ? "sí" : "no"], ["Timeout 3h", pl.timeout ? "sí" : "no"], ["Cortos", pl.shorts ? "simulados PAPER" : "no"]);
+    if (pl.next) chips.push(["Fase B", `${swt} (Madrid) → entrada ${pl.next.entryPct}% · riesgo ${pl.next.riskCapPct}% · +${pl.next.targetPct}% · R/R ${pl.next.minRr} · máx ${pl.next.maxOpen} · diario −${pl.next.dailyStopPct}%`]);
+  }
   $("#fchips").innerHTML = chips.map(([k, v]) => `<span class="chip"><i>${esc(k)}</i> ${esc(v)}</span>`).join("");
   const st = f.stages || [], top = Math.max(1, ...st.map(x => x.n || 0));
   box.innerHTML = st.map(x => `<div class="frow"><span class="fl">${esc(x.label.toUpperCase())}</span>
@@ -345,9 +355,9 @@ const V = {
   pos() {
     const open = (data.state || {}).open || [];
     if (!open.length) return `<div class="empty">Sin posiciones abiertas.<br><span class="small">El desk sigue escaneando.</span></div>`;
-    return open.map((p, i) => `<div class="pcard"><h3><span>${esc(p.name || p.mint.slice(0, 6))}</span><span class="${cls(p.pct)}">${pct(p.pct)}</span></h3>
+    return open.map((p, i) => `<div class="pcard"><h3><span>${p.side === "short" ? `<span class="chip neg">PAPER · CORTO</span> ` : ""}${esc(p.name || p.mint.slice(0, 6))}</span><span class="${cls(p.pct)}">${pct(p.pct)}</span></h3>
       <div class="kv"><span>PnL</span><span class="${cls(p.pnlUsd)}">${usd(p.pnlUsd)}</span><span>Entrada</span><span>${p.entryPrice.toPrecision(4)}</span>
-      <span>Precio</span><span>${(p.price || 0).toPrecision(4)}</span><span>Abierta</span><span>${hhmm(p.opened)}</span><span>Estado</span><span>${esc(p.status)}</span></div>
+      <span>Precio</span><span>${(p.price || 0).toPrecision(4)}</span><span>Abierta</span><span>${hhmm(p.opened)}</span><span>Estado</span><span>${esc(p.status)}</span>${p.targetLine != null ? `<span>Objetivo</span><span>${Number(p.targetLine).toPrecision(4)}</span>` : ""}<span>Stop</span><span>${p.stopLine != null ? Number(p.stopLine).toPrecision(4) : "—"}</span></div>
       <canvas id="ch${i}"></canvas>${fomo(p.link) ? `<div class="small"><a href="${esc(fomo(p.link))}" target="_blank" rel="noopener noreferrer">Abrir en FOMO ↗</a></div>` : ""}</div>`).join("");
   },
   night() {
@@ -395,7 +405,7 @@ function render() {
   if (tab === "pos") ((data.state || {}).open || []).forEach((p, i) => {
     const c = document.getElementById("ch" + i); if (!c) return;
     window.DeskChart.draw(c, (data.series || {})[p.mint], [
-      {v: p.entryPrice, c: "#8a8a8e", n: "entrada"}, {v: p.stopLine, c: "#ff4d4f", n: "stop"}, {v: p.trailLine, c: "#ffb020", n: "trail"}]);
+      {v: p.entryPrice, c: "#8a8a8e", n: "entrada"}, {v: p.stopLine, c: "#ff4d4f", n: "stop"}, {v: p.trailLine, c: "#ffb020", n: "trail"}, {v: p.targetLine, c: "#2ecc71", n: "objetivo"}]);
   });
 }
 

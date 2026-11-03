@@ -133,3 +133,4 @@ button.bub{padding:0;background:none;cursor:pointer;font:inherit}
 .why{white-space:pre-wrap;font:inherit;font-size:15px;margin:0;background:#05040a;padding:6px;border:1px solid var(--pinkd);color:var(--t)}
 .mint{word-break:break-all;margin-top:4px}
 @media (max-width:760px){.heat{grid-template-columns:repeat(8,1fr)}.frow{grid-template-columns:84px 1fr 48px}}
+.chip.neg{color:var(--r)}
