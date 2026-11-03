@@ -279,7 +279,8 @@ function auditP() {
 function nearP() {
   const n = P().nearMisses || [], box = $("#near"), ms = ((data.settings || {}).analyst || {}).min_score;
   $("#nearsub").textContent = ms == null ? "" : `SCORE ${ms - 10}–${ms - 1} · MIN ${ms}`;
-  if (!n.length) { box.innerHTML = `<div class="empty">Ningún coin a menos de 10 puntos del mínimo (todavía sin veredictos del Analyst).</div>`; return; }
+  if (!n.length) { const st = ((P().funnel || {}).stages || [])[3] || {}, nv = st.in || 0;
+    box.innerHTML = `<div class="empty">Ningún coin a menos de 10 puntos del mínimo${nv ? ` (${nv} veredicto${nv > 1 ? "s" : ""} del Analyst esta noche, todos más abajo)` : " (todavía sin veredictos del Analyst)"}.</div>`; return; }
   box.innerHTML = `<ul class="list">${n.map(x => `<li><div class="aqrow">${coinBtn(x.mint, x.name)}<span class="fbar"><i data-w="${x.score / 100}"></i></span><b>${x.score}<span class="muted">/${x.minScore}</span></b></div>
     <div class="sub">hundido por: ${esc(x.sunkBy)}${x.reason ? " · " + esc(x.reason) : ""}</div></li>`).join("")}</ul>`;
   widths(box);
