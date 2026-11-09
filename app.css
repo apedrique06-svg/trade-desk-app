@@ -134,3 +134,21 @@ button.bub{padding:0;background:none;cursor:pointer;font:inherit}
 .mint{word-break:break-all;margin-top:4px}
 @media (max-width:760px){.heat{grid-template-columns:repeat(8,1fr)}.frow{grid-template-columns:84px 1fr 48px}}
 .chip.neg{color:var(--r)}
+
+/* v5 copy trading (2026-11-09) */
+body.copy .sig{display:none!important}
+.copytot{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:18px;margin-bottom:6px;color:var(--t)}
+.copytot b{color:var(--pink);font-weight:400}
+.ctraders{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+@media (max-width:760px){.ctraders{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.ctr{border:1px solid var(--pinkd);padding:6px;min-width:0;background:#05040a;box-shadow:inset 0 0 8px rgba(255,45,149,.10)}
+.ctr h4{margin:0 0 2px;color:var(--pink);font-weight:400;font-size:18px;letter-spacing:.06em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctr .eq{font-size:24px;color:var(--t)}
+.ctr .kv{font-size:14px}
+.ctab{width:100%;border-collapse:collapse;font-size:14px}
+.ctab th{color:var(--m);font-weight:400;text-align:left;border-bottom:1px solid var(--pinkd);padding:2px 3px}
+.ctab td{padding:2px 3px;border-bottom:1px solid rgba(92,16,56,.45);white-space:nowrap}
+.ctab td.r,.ctab th.r{text-align:right}
+.ctabw{overflow-x:auto}
+.late{color:var(--y);border:1px solid var(--y);padding:0 3px;font-size:12px;margin-left:3px}
+.buy{color:var(--g)}.sell{color:var(--r)}

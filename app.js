@@ -245,6 +245,45 @@ function terminal() {
 }
 
 
+/* ---- v5 copy trading (2026-11-09): 5 traders, sub-account P&L, open copies, delay + slippage of each copy ---- */
+const isCopy = () => !!(data && data.strategy === "copy" && data.copy);
+const px = x => x == null ? "—" : Number(x) >= 1 ? Number(x).toFixed(4) : Number(x).toPrecision(4);
+const secs = x => x == null ? "—" : x < 120 ? Math.round(x) + " s" : x < 7200 ? Math.round(x / 60) + " min" : (x / 3600).toFixed(1) + " h";
+const sp = x => x == null ? "—" : (x > 0 ? "+" : "") + Number(x).toFixed(2) + "%";
+const solscan = sig => /^[1-9A-HJ-NP-Za-km-z]{60,100}$/.test(String(sig || "")) ? `https://solscan.io/tx/${sig}` : null;
+function copyP() {
+  const c = data.copy || {}, t = c.total || {}, tr = c.traders || [];
+  $("#copysub").textContent = `${tr.length} TRADERS · DESDE ${c.startTs ? hhmm(c.startTs) : "—"} · SIN STOP NI FILTROS`;
+  $("#copytot").innerHTML = `<span><b>TOTAL</b> ${usd(t.start_usd)} → ${usd(t.equity_usd)} <span class="${cls(t.pnl_usd)}">${usd(t.pnl_usd)} (${sp(t.pnl_pct)})</span></span>
+    <span><b>REAL.</b> <span class="${cls(t.realized_usd)}">${usd(t.realized_usd)}</span></span><span><b>NO REAL.</b> <span class="${cls(t.unrealized_usd)}">${usd(t.unrealized_usd)}</span></span>
+    <span><b>ABIERTAS</b> ${t.open_positions ?? 0}</span><span><b>COPIAS 24H</b> ${t.copies_window ?? 0}${t.late_window ? ` <span class="late">${t.late_window} TARDÍAS</span>` : ""}</span>
+    <span><b>RETRASO</b> ${secs(t.avg_delay_s)}</span><span><b>DESLIZ.</b> ${sp(t.avg_slippage_pct)}</span>`;
+  $("#copytraders").innerHTML = tr.map(d => `<div class="ctr"><h4 title="${esc(d.address)}">${esc(d.handle)}</h4>
+    <div class="muted small">${esc(d.short)} · subcuenta ${usd(d.start_usd)}</div>
+    <div class="eq">${usd(d.equity_usd)} <span class="${cls(d.pnl_usd)} small">${usd(d.pnl_usd)} · ${sp(d.pnl_pct)}</span></div>
+    <div class="kv"><span>Real.</span><span class="${cls(d.realized_usd)}">${usd(d.realized_usd)}</span><span>No real.</span><span class="${cls(d.unrealized_usd)}">${usd(d.unrealized_usd)}</span>
+    <span>Caja</span><span>${usd(d.cash_usd)}</span><span>Abiertas</span><span>${d.open_positions}</span><span>Copias 24h</span><span>${d.copies_window}${d.late_window ? ` <span class="late">${d.late_window}</span>` : ""}</span>
+    <span>Retraso</span><span>${secs(d.avg_delay_s)}</span><span>Desliz.</span><span>${sp(d.avg_slippage_pct)}</span></div></div>`).join("");
+  const op = c.open || [];
+  $("#copyopensub").textContent = `${op.length} POSICIONES`;
+  $("#copyopen").innerHTML = op.length ? `<div class="ctabw"><table class="ctab"><tr><th>Trader</th><th>Token</th><th class="r">Coste</th><th class="r">Valor</th><th class="r">PnL</th><th class="r">Precio</th></tr>${op.map(p =>
+    `<tr><td>${esc(p.handle)}</td><td>${coinBtn(p.mint, p.symbol)}</td><td class="r">${usd(p.costUsd)}</td><td class="r">${usd(p.valueUsd)}</td><td class="r ${cls(p.pnlUsd)}">${usd(p.pnlUsd)} ${sp(p.pnlPct)}</td><td class="r">${px(p.price)}</td></tr>`).join("")}</table></div>`
+    : `<div class="empty">Sin copias abiertas.<br><span class="small">Se abre una cuando uno de los 5 compra.</span></div>`;
+  const rc = c.recent || [];
+  $("#copyrecent").innerHTML = rc.length ? `<div class="ctabw"><table class="ctab"><tr><th>Hora</th><th>Trader</th><th>Op.</th><th>Token</th><th class="r">$</th><th class="r">Retraso</th><th class="r">Px trader</th><th class="r">Px nuestro</th><th class="r">Desliz.</th></tr>${rc.map(r => {
+    const link = solscan(r.sig);
+    const op = r.side === "buy" ? `<span class="buy">COMPRA ${r.traderPct != null ? r.traderPct.toFixed(2) + "%" : ""}</span>` : `<span class="sell">VENDE ${r.sellPct != null ? r.sellPct.toFixed(0) + "%" : ""}</span>`;
+    return `<tr title="${esc(r.note || r.dex || "")}"><td>${link ? `<a href="${esc(link)}" target="_blank" rel="noopener noreferrer">${hhmm(r.ts)}</a>` : hhmm(r.ts)}</td><td>${esc(r.handle)}</td><td>${op}${r.status === "skipped" ? ' <span class="muted">no copiada</span>' : r.status === "partial" ? ' <span class="muted">parcial</span>' : ""}</td>
+      <td>${coinBtn(r.mint, r.symbol)}</td><td class="r">${usd(r.usd)}</td><td class="r">${secs(r.delayS)}${r.late ? '<span class="late">TARDE</span>' : ""}</td>
+      <td class="r">${px(r.traderPrice)}</td><td class="r">${px(r.ourPrice)}</td><td class="r ${r.slippagePct == null ? "" : r.slippagePct > 0 ? "neg" : "pos"}">${sp(r.slippagePct)}</td></tr>`;
+  }).join("")}</table></div>` : `<div class="empty">Aún no hay copias.<br><span class="small">Vigilando 5 wallets en Solana.</span></div>`;
+  const t2 = $("#term2");
+  if (t2) {
+    const acts = (data.activity || []).filter(x => x.agent === "copier").sort((a, b) => evTs(a) - evTs(b)).slice(-40);
+    t2.innerHTML = acts.map(x => `<div class="${/buy/.test(x.kind) ? "ok" : /sell/.test(x.kind) ? "bad" : ""}"><span class="t">[${hhmm(x.ts)}]</span> ${esc(x.text)}</div>`).join("") || `<div class="muted">&gt; esperando copias…</div>`;
+  }
+}
+
 /* ---- v4 read-only panels (2026-11-03): funnel, Auditor queue, near misses, rejected-then-pumped, heatmap, coin card ---- */
 const P = () => (data && data.panels) || {};
 const kusd = x => x == null ? "—" : "$" + (Math.abs(x) >= 1e6 ? (x / 1e6).toFixed(2) + "M" : Math.abs(x) >= 1e3 ? (x / 1e3).toFixed(1) + "K" : Number(x).toFixed(0));
@@ -323,7 +362,8 @@ function openCoin(mint) {
   const rows = d ? [["Estado", d.status], ["Liquidez", kusd(d.liquidityUsd)], ["Edad pool", d.ageMin == null ? "—" : d.ageMin + " min"],
     ["Volumen 1 h", kusd(d.volumeH1)], ["Cambio 1 h", pct(d.h1ChangePct)], ["Top 10", d.top10Pct == null ? "—" : num(d.top10Pct, 1) + "%"],
     ["Holders", d.holders == null ? "—" : num(d.holders)], ["LP bloqueado", d.lpLocked || "—"]] : [["Estado", c.status], ["Motivo", c.reason]];
-  const dex = d && typeof d.dexscreener === "string" && d.dexscreener.startsWith("https://dexscreener.com/") ? d.dexscreener : null;
+  const dex = d && typeof d.dexscreener === "string" && d.dexscreener.startsWith("https://dexscreener.com/") ? d.dexscreener
+    : (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(String(mint)) ? `https://dexscreener.com/solana/${mint}` : null);
   const fl = fomo((d && d.link) || c.link);
   $("#sheetbody").innerHTML = `<div class="kv">${rows.map(([k, v]) => `<span>${esc(k)}</span><span>${esc(v == null ? "—" : v)}</span>`).join("")}</div>
     <div class="links">${dex ? `<a href="${esc(dex)}" target="_blank" rel="noopener noreferrer">DexScreener ↗</a>` : ""}${fl ? `<a href="${esc(fl)}" target="_blank" rel="noopener noreferrer">Abrir en FOMO ↗</a>` : ""}</div>
@@ -343,6 +383,15 @@ function animCharts() {
 }
 
 function dashboard() {
+  const cp = isCopy();
+  document.body.classList.toggle("copy", cp);
+  document.querySelectorAll(".copyonly").forEach(el => { el.hidden = !cp; });
+  $("#brandname").textContent = cp ? "TRADE DESK · COPY" : "TRADE DESK + JEV";
+  if (cp) {
+    copyP();
+    window.DeskChart.strip($("#balchart"), data.equitySeries || [], (data.state || {}).stack);
+    return;
+  }
   cards(); bubbles(); analysis(); thresholds(); terminal(); panelsV4();
   big = bigSeries(); $("#bigtitle").textContent = big.title; $("#bigsub").textContent = big.sub;
   cand = candleData(); $("#candletitle").textContent = cand.title; $("#candlesub").textContent = cand.sub;
@@ -352,7 +401,15 @@ function dashboard() {
 }
 
 const V = {
+  copy() {
+    if (!isCopy()) return `<div class="empty">Copy trading apagado.</div>`;
+    const rc = (data.copy || {}).recent || [];
+    if (!rc.length) return `<div class="empty">Aún no hay copias.</div>`;
+    return `<ul class="list">${rc.map(r => `<li>${esc(r.handle)} · <span class="${r.side === "buy" ? "buy" : "sell"}">${r.side === "buy" ? "compra" : "vende"}</span> ${esc(r.symbol)} · ${usd(r.usd)}${r.late ? ' <span class="late">TARDE</span>' : ""}
+      <div class="sub">${hhmm(r.ts)} · retraso ${secs(r.delayS)} · desliz. ${sp(r.slippagePct)} · comisión ${usd(r.feeUsd)}${r.pnlUsd != null && r.side === "sell" ? ` · PnL ${usd(r.pnlUsd)}` : ""} · ${esc(r.dex || "")}${r.note ? " · " + esc(r.note) : ""}</div></li>`).join("")}</ul>`;
+  },
   pos() {
+    if (isCopy()) return V.copy();
     const open = (data.state || {}).open || [];
     if (!open.length) return `<div class="empty">Sin posiciones abiertas.<br><span class="small">El desk sigue escaneando.</span></div>`;
     return open.map((p, i) => `<div class="pcard"><h3><span>${p.side === "short" ? `<span class="chip neg">PAPER · CORTO</span> ` : ""}${esc(p.name || p.mint.slice(0, 6))}</span><span class="${cls(p.pct)}">${pct(p.pct)}</span></h3>
@@ -396,13 +453,13 @@ function render() {
   $("#setup").hidden = !setup; $("#dash").hidden = setup; $("#tabs").hidden = setup; $("#top").hidden = setup;
   if (setup) return;
   freshness(); header(); clock();
-  const names = {pos: "POSICIONES", night: "NOCHE", coins: "COINS", act: "ACTIVIDAD", health: "SALUD"};
+  const names = {copy: "COPIAS", pos: "POSICIONES", night: "NOCHE", coins: "COINS", act: "ACTIVIDAD", health: "SALUD"};
   $("#tabname").textContent = names[tab] || "";
   const v = $("#view");
   if (!data) { v.innerHTML = lastErr ? `<div class="err">${esc(lastErr)}</div>` : `<div class="empty">Cargando…</div>`; return; }
   dashboard();
   v.innerHTML = (lastErr ? `<div class="err small">${esc(lastErr)}</div>` : "") + V[tab]();
-  if (tab === "pos") ((data.state || {}).open || []).forEach((p, i) => {
+  if (tab === "pos" && !isCopy()) ((data.state || {}).open || []).forEach((p, i) => {
     const c = document.getElementById("ch" + i); if (!c) return;
     window.DeskChart.draw(c, (data.series || {})[p.mint], [
       {v: p.entryPrice, c: "#8a8a8e", n: "entrada"}, {v: p.stopLine, c: "#ff4d4f", n: "stop"}, {v: p.trailLine, c: "#ffb020", n: "trail"}, {v: p.targetLine, c: "#2ecc71", n: "objetivo"}]);
