@@ -11,7 +11,7 @@ const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&": "&am
 const usd = x => x == null ? "—" : (x < 0 ? "-$" : "$") + Math.abs(x).toFixed(2);
 const pct = x => x == null ? "—%" : (x > 0 ? "+" : "") + x.toFixed(1) + "%";
 const cls = x => x == null ? "" : x >= 0 ? "pos" : "neg";
-const hhmm = iso => { try { return new Date(iso).toLocaleTimeString("es-ES", {hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid"}); } catch (e) { return ""; } };
+const hhmm = iso => { try { return new Date(iso).toLocaleTimeString("es-ES", {hour: "2-digit", minute: "2-digit", timeZone: "Atlantic/Canary"}); } catch (e) { return ""; } };
 const fomo = u => (typeof u === "string" && u.startsWith("https://")) ? u : null;   // ready-made by links.py
 
 let creds = null, data = null, tab = "pos", key = null, timer = null, lastErr = null;
@@ -89,7 +89,7 @@ const num = (v, d) => v == null ? "—" : Number(v).toFixed(d == null ? 0 : d);
 const sumv = a => (a || []).reduce((x, y) => x + y, 0);
 
 function clock() {
-  $("#clock").textContent = new Date().toLocaleTimeString("es-ES", {hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Europe/Madrid"}) + " MADRID";
+  $("#clock").textContent = new Date().toLocaleTimeString("es-ES", {hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Atlantic/Canary"}) + " CANARIAS";
 }
 
 function freshness() {
@@ -210,7 +210,7 @@ function analysis() {
   if (a.liquidityUsd != null) rows.push(["Liquidez", usd(a.liquidityUsd)]);
   if (a.top10Pct != null) rows.push(["Top 10", num(a.top10Pct, 1) + "%"]);
   if (a.h1ChangePct != null) rows.push(["Cambio 1 h", pct(a.h1ChangePct)]);
-  if (a.ts) rows.push(["Hora", hhmm(a.ts) + " Madrid"]);
+  if (a.ts) rows.push(["Hora", hhmm(a.ts) + " Canarias"]);
   box.innerHTML = `<div class="ana"><div class="name">${name}</div>${a.kind === "verdict" ? `<div class="gauge"><i data-w="${(a.score || 0) / 100}"></i><b data-w="${(a.minScore || 0) / 100}"></b></div>` : ""}
     ${rows.map(([k, v]) => `<span class="k">${esc(k)}</span><span class="v">${esc(v)}</span>`).join("")}</div>`;
   const gi = box.querySelector(".gauge i"), gb = box.querySelector(".gauge b");
@@ -235,13 +235,13 @@ function terminal() {
   const span = Math.min(14, (data.uploadEveryS || 15) - 1);
   fresh.forEach((x, i) => window.DeskOffice.fire(x, (i + 0.3) * span / Math.max(1, fresh.length)));
   if (acts.length) lastEvTs = Math.max(lastEvTs || 0, evTs(acts[acts.length - 1]));
-  const sec = iso => { try { return new Date(iso).toLocaleTimeString("es-ES", {hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Europe/Madrid"}); } catch (e) { return ""; } };
+  const sec = iso => { try { return new Date(iso).toLocaleTimeString("es-ES", {hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Atlantic/Canary"}); } catch (e) { return ""; } };
   const term = $("#term");
   term.innerHTML = acts.slice(-40).map((x, i, arr) => {
     const k = String(x.kind || ""), c = /reject|kill|fail|stop|error|miss/.test(k) ? "bad" : /pass|buy|bought|ok/.test(k) ? "ok" : "";
     return `<div class="${c}${i === arr.length - 1 ? " typing" : ""}"><span class="t">[${sec(x.ts)}]</span> <span class="a">${esc(String(x.agent || "").toUpperCase().padEnd(8, " "))}</span> ${esc(k)} · ${esc(x.text)}</div>`;
   }).join("") || `<div class="muted">&gt; esperando actividad…</div>`;
-  $("#logsub").textContent = `${acts.length} eventos · hora Madrid`;
+  $("#logsub").textContent = `${acts.length} eventos · hora Canarias`;
 }
 
 
@@ -253,26 +253,35 @@ const sp = x => x == null ? "—" : (x > 0 ? "+" : "") + Number(x).toFixed(2) + 
 const solscan = sig => /^[1-9A-HJ-NP-Za-km-z]{60,100}$/.test(String(sig || "")) ? `https://solscan.io/tx/${sig}` : null;
 function copyP() {
   const c = data.copy || {}, t = c.total || {}, tr = c.traders || [];
-  $("#copysub").textContent = `${tr.length} TRADERS · DESDE ${c.startTs ? hhmm(c.startTs) : "—"} · SIN STOP NI FILTROS`;
+  const ru = c.rules || {};
+  const hmc = iso => { try { return new Date(iso).toLocaleTimeString("es-ES", {hour: "2-digit", minute: "2-digit", timeZone: ru.tz || "Atlantic/Canary"}); } catch (e) { return ""; } };
+  const rules = [ru.stopPct ? `STOP −${ru.stopPct}%` : "SIN STOP", ru.minMcapUsd ? `MCAP ≥ ${kusd(ru.minMcapUsd)}` : "SIN FILTROS", ru.closeAt ? `CIERRE ${ru.closeAt} CANARIAS` : ""].filter(Boolean).join(" · ");
+  $("#copysub").textContent = `${tr.length} TRADERS · DESDE ${c.startTs ? hmc(c.startTs) : "—"} · ${rules}`;
   $("#copytot").innerHTML = `<span><b>TOTAL</b> ${usd(t.start_usd)} → ${usd(t.equity_usd)} <span class="${cls(t.pnl_usd)}">${usd(t.pnl_usd)} (${sp(t.pnl_pct)})</span></span>
     <span><b>REAL.</b> <span class="${cls(t.realized_usd)}">${usd(t.realized_usd)}</span></span><span><b>NO REAL.</b> <span class="${cls(t.unrealized_usd)}">${usd(t.unrealized_usd)}</span></span>
     <span><b>ABIERTAS</b> ${t.open_positions ?? 0}</span><span><b>COPIAS 24H</b> ${t.copies_window ?? 0}${t.late_window ? ` <span class="late">${t.late_window} TARDÍAS</span>` : ""}</span>
-    <span><b>RETRASO</b> ${secs(t.avg_delay_s)}</span><span><b>DESLIZ.</b> ${sp(t.avg_slippage_pct)}</span>`;
+    <span><b>RETRASO</b> ${secs(t.avg_delay_s)}</span><span><b>DESLIZ.</b> ${sp(t.avg_slippage_pct)}</span>
+    <span><b>STOPS</b> ${t.stops_window ?? 0}</span><span><b>MCAP &lt; 100K</b> ${t.mcap_skips_window ?? 0}</span>
+    <span><b>CIERRE ${esc(ru.closeAt || "06:55")}</b> ${t.close_0655 ? `${t.close_0655.positions} · ${hmc(new Date(t.close_0655.ts * 1000).toISOString())}${t.close_0655.late ? ' <span class="late">TARDE</span>' : ""}` : "—"}</span>
+    ${(c.history || []).length ? `<span class="muted small">antes: ${esc(c.history.map(h => (h.traders || []).map(x => x.handle).join(", ")).join(" | "))} (historial guardado)</span>` : ""}`;
   $("#copytraders").innerHTML = tr.map(d => `<div class="ctr"><h4 title="${esc(d.address)}">${esc(d.handle)}</h4>
     <div class="muted small">${esc(d.short)} · subcuenta ${usd(d.start_usd)}</div>
     <div class="eq">${usd(d.equity_usd)} <span class="${cls(d.pnl_usd)} small">${usd(d.pnl_usd)} · ${sp(d.pnl_pct)}</span></div>
     <div class="kv"><span>Real.</span><span class="${cls(d.realized_usd)}">${usd(d.realized_usd)}</span><span>No real.</span><span class="${cls(d.unrealized_usd)}">${usd(d.unrealized_usd)}</span>
     <span>Caja</span><span>${usd(d.cash_usd)}</span><span>Abiertas</span><span>${d.open_positions}</span><span>Copias 24h</span><span>${d.copies_window}${d.late_window ? ` <span class="late">${d.late_window}</span>` : ""}</span>
-    <span>Retraso</span><span>${secs(d.avg_delay_s)}</span><span>Desliz.</span><span>${sp(d.avg_slippage_pct)}</span></div></div>`).join("");
+    <span>Retraso</span><span>${secs(d.avg_delay_s)}</span><span>Desliz.</span><span>${sp(d.avg_slippage_pct)}</span>
+    <span>Stops</span><span>${d.stops_window ?? 0}</span><span>Mcap &lt; 100K</span><span>${d.mcap_skips_window ?? 0}</span></div></div>`).join("");
   const op = c.open || [];
   $("#copyopensub").textContent = `${op.length} POSICIONES`;
   $("#copyopen").innerHTML = op.length ? `<div class="ctabw"><table class="ctab"><tr><th>Trader</th><th>Token</th><th class="r">Coste</th><th class="r">Valor</th><th class="r">PnL</th><th class="r">Precio</th></tr>${op.map(p =>
     `<tr><td>${esc(p.handle)}</td><td>${coinBtn(p.mint, p.symbol)}</td><td class="r">${usd(p.costUsd)}</td><td class="r">${usd(p.valueUsd)}</td><td class="r ${cls(p.pnlUsd)}">${usd(p.pnlUsd)} ${sp(p.pnlPct)}</td><td class="r">${px(p.price)}</td></tr>`).join("")}</table></div>`
-    : `<div class="empty">Sin copias abiertas.<br><span class="small">Se abre una cuando uno de los 5 compra.</span></div>`;
+    : `<div class="empty">Sin copias abiertas.<br><span class="small">Se abre una cuando uno de los traders compra.</span></div>`;
   const rc = c.recent || [];
   $("#copyrecent").innerHTML = rc.length ? `<div class="ctabw"><table class="ctab"><tr><th>Hora</th><th>Trader</th><th>Op.</th><th>Token</th><th class="r">$</th><th class="r">Retraso</th><th class="r">Px trader</th><th class="r">Px nuestro</th><th class="r">Desliz.</th></tr>${rc.map(r => {
     const link = solscan(r.sig);
-    const op = r.side === "buy" ? `<span class="buy">COMPRA ${r.traderPct != null ? r.traderPct.toFixed(2) + "%" : ""}</span>` : `<span class="sell">VENDE ${r.sellPct != null ? r.sellPct.toFixed(0) + "%" : ""}</span>`;
+    const tag = {stop: "STOP", close_0655: "CIERRE", switch: "CAMBIO", mcap: "MCAP", window: "06:55"}[r.reason];
+    const op = (r.side === "buy" ? `<span class="buy">COMPRA ${r.traderPct != null ? r.traderPct.toFixed(2) + "%" : ""}</span>` : `<span class="sell">VENDE ${r.sellPct != null ? r.sellPct.toFixed(0) + "%" : ""}</span>`)
+      + (tag ? ` <span class="late">${tag}</span>` : "");
     return `<tr title="${esc(r.note || r.dex || "")}"><td>${link ? `<a href="${esc(link)}" target="_blank" rel="noopener noreferrer">${hhmm(r.ts)}</a>` : hhmm(r.ts)}</td><td>${esc(r.handle)}</td><td>${op}${r.status === "skipped" ? ' <span class="muted">no copiada</span>' : r.status === "partial" ? ' <span class="muted">parcial</span>' : ""}</td>
       <td>${coinBtn(r.mint, r.symbol)}</td><td class="r">${usd(r.usd)}</td><td class="r">${secs(r.delayS)}${r.late ? '<span class="late">TARDE</span>' : ""}</td>
       <td class="r">${px(r.traderPrice)}</td><td class="r">${px(r.ourPrice)}</td><td class="r ${r.slippagePct == null ? "" : r.slippagePct > 0 ? "neg" : "pos"}">${sp(r.slippagePct)}</td></tr>`;
@@ -300,12 +309,12 @@ function funnelP() {
   const pl = f.plan;
   if (pl && pl.phase && pl.phase !== "legacy") {
     const sw = pl.switchAt ? new Date(pl.switchAt) : null;
-    const swt = sw ? sw.toLocaleString("es-ES", {timeZone: "Europe/Madrid", weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"}) : "—";
+    const swt = sw ? sw.toLocaleString("es-ES", {timeZone: "Atlantic/Canary", weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"}) : "—";
     chips.push(["Fase", `${pl.phase} · PAPER`], ["Entrada", `${pl.entryPct}% saldo`], ["Riesgo máx", `${pl.riskCapPct}% saldo/op`],
       ["Stop", `−${pl.stopPct}%`], ["Objetivo", `+${pl.targetPct}% fijo`], ["R/R", `${pl.rr} (min ${pl.minRr})`],
       ["Máx abiertas", `${pl.maxOpen} · 1 por coin`], ["Stop diario", `−${pl.dailyStopPct}%${pl.closeAllOnBrake ? " cierra todo" : ""}`],
       ["Trailing", pl.trailing ? "sí" : "no"], ["Timeout 3h", pl.timeout ? "sí" : "no"], ["Cortos", pl.shorts ? "simulados PAPER" : "no"]);
-    if (pl.next) chips.push(["Fase B", `${swt} (Madrid) → entrada ${pl.next.entryPct}% · riesgo ${pl.next.riskCapPct}% · +${pl.next.targetPct}% · R/R ${pl.next.minRr} · máx ${pl.next.maxOpen} · diario −${pl.next.dailyStopPct}%`]);
+    if (pl.next) chips.push(["Fase B", `${swt} (Canarias) → entrada ${pl.next.entryPct}% · riesgo ${pl.next.riskCapPct}% · +${pl.next.targetPct}% · R/R ${pl.next.minRr} · máx ${pl.next.maxOpen} · diario −${pl.next.dailyStopPct}%`]);
   }
   $("#fchips").innerHTML = chips.map(([k, v]) => `<span class="chip"><i>${esc(k)}</i> ${esc(v)}</span>`).join("");
   const st = f.stages || [], top = Math.max(1, ...st.map(x => x.n || 0));
@@ -444,7 +453,7 @@ const V = {
     const h = data.health || {}, ag = h.agents || {};
     return `<div class="pcard"><h3><span>Salud</span><span class="${h.ok ? "pos" : "neg"}">${h.ok ? "OK" : "revisar"}</span></h3><ul class="list">${Object.entries(ag).map(([k, v]) =>
       `<li><span class="dot ${v.age_s != null && v.age_s < 60 ? "ok" : "bad"}"></span>${esc(k)}${v.paused ? " · pausado" : ""}<div class="sub">latido hace ${v.age_s == null ? "—" : Math.round(v.age_s) + " s"} · ${esc(v.note || "")}</div></li>`).join("")}</ul></div>
-      <div class="muted small">Datos de ${hhmm(data.ts)} (Madrid) · se actualizan cada ${data.uploadEveryS || 15} s</div>`;
+      <div class="muted small">Datos de ${hhmm(data.ts)} (Canarias) · se actualizan cada ${data.uploadEveryS || 15} s</div>`;
   }
 };
 

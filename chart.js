@@ -21,7 +21,7 @@
   }
   const sfmt = v => v >= 1000 ? "$" + (v / 1000).toFixed(1) + "K" : v >= 1 ? "$" + v.toFixed(0) : v.toPrecision(2);
 
-  const tl = t => new Date(t * 1000).toLocaleTimeString("es-ES", {hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid"});
+  const tl = t => new Date(t * 1000).toLocaleTimeString("es-ES", {hour: "2-digit", minute: "2-digit", timeZone: "Atlantic/Canary"});
   function bounds(vals, padFrac) {
     let lo = Math.min(...vals), hi = Math.max(...vals);
     const span = Math.max(hi - lo, Math.abs(hi) * 0.02, 1e-12); lo -= span * padFrac; hi += span * padFrac; return [lo, hi];
@@ -50,7 +50,7 @@
       const sx = padL + ((now || 0) * 40) % (w - padL - padR);
       g.fillStyle = "rgba(255,45,149,.18)"; g.fillRect(sx, padT, 2, h - padT - padB);
       g.fillStyle = "#ff2d95"; g.font = FONT; g.textAlign = "right"; g.fillText(fmt(pts[pts.length - 1][1]), w - padR, padT + 10);
-      g.fillStyle = "#8a7c9a"; g.fillText(tl(t1) + " Madrid", w - padR, h - 2); g.textAlign = "left"; g.fillText(tl(t0), padL, h - 2);
+      g.fillStyle = "#8a7c9a"; g.fillText(tl(t1) + " Canarias", w - padR, h - 2); g.textAlign = "left"; g.fillText(tl(t0), padL, h - 2);
     },
 
     /* Wide balance strip: green area down to the start-stack baseline + pink equity line. */
@@ -72,7 +72,7 @@
       g.strokeStyle = "rgba(43,255,136,.8)"; g.setLineDash([4, 3]); g.lineWidth = 1; g.beginPath(); g.moveTo(padL, by); g.lineTo(w - padR, by); g.stroke(); g.setLineDash([]);
       g.beginPath(); path.forEach((p, i) => (i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])));
       g.strokeStyle = "#ff2d95"; g.lineWidth = 2; g.shadowColor = "#ff2d95"; g.shadowBlur = 6; g.stroke(); g.shadowBlur = 0;
-      g.fillStyle = "#8a7c9a"; g.font = FONT; g.fillText(tl(t0), padL, h - 2); g.textAlign = "right"; g.fillText(tl(t1) + " Madrid", w - padR, h - 2); g.textAlign = "left";
+      g.fillStyle = "#8a7c9a"; g.font = FONT; g.fillText(tl(t0), padL, h - 2); g.textAlign = "right"; g.fillText(tl(t1) + " Canarias", w - padR, h - 2); g.textAlign = "left";
     },
 
     /* Candles [{o,h,l,c}] pink (down) / green (up) + two regression trendlines that draw themselves (prog 0..1). */
@@ -143,8 +143,8 @@
       const last = path[path.length - 1];
       g.fillStyle = "#22e58b"; g.fillRect(last[0] - 3, last[1] - 3, 6, 6);
       g.fillStyle = "#5c638a"; g.font = FONT;
-      const tl = t => new Date(t * 1000).toLocaleTimeString("es-ES", {hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid"});
-      g.fillText(tl(t0), padL, h - 3); g.textAlign = "right"; g.fillText(tl(t1) + " Madrid", w - padR, h - 3); g.textAlign = "left";
+      const tl = t => new Date(t * 1000).toLocaleTimeString("es-ES", {hour: "2-digit", minute: "2-digit", timeZone: "Atlantic/Canary"});
+      g.fillText(tl(t0), padL, h - 3); g.textAlign = "right"; g.fillText(tl(t1) + " Canarias", w - padR, h - 3); g.textAlign = "left";
     },
 
     candles(canvas, series, n) {
